@@ -16,7 +16,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
   :root{
     --bg:radial-gradient(130% 90% at 50% -10%,#0c4534 0%,#072a1f 55%,#041a13 100%);
     --brd:rgba(201,162,75,.30);--text:#f4ecd6;--muted:#b7a87f;--gold:#e8c874;--gold2:#c9a24b;
@@ -263,6 +265,7 @@ const SUPA_URL='https://hdawgsoopcucrcidbnoh.supabase.co';
 const SUPA_KEY='sb_publishable_wggkrr9ileMzn_oE_75l8A_7aiyl9DB';
 const EMAIL_DOMAIN='rkroulette.app';   // username "rk" -> rk@rkroulette.app
 const supa=createClient(SUPA_URL,SUPA_KEY);
+document.addEventListener('contextmenu',e=>{if(!/^(INPUT|TEXTAREA)$/.test(e.target.tagName))e.preventDefault();});
 window.addEventListener('error',e=>{try{showBootError((e&&e.message)||'Script error');}catch(_){}});
 window.addEventListener('unhandledrejection',e=>{try{showBootError((e&&e.reason&&e.reason.message)||'Load error');}catch(_){}});
 function showBootError(msg){
