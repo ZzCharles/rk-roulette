@@ -185,6 +185,7 @@
       <button class="iconbtn" id="histBtn">History</button>
       <div class="bal"><div class="l">Balance</div><div class="v" id="bal">1,000</div></div>
       <button class="iconbtn sq" id="mute" aria-label="Sound">♪</button>
+      <button class="iconbtn sq" id="logoutBtn" aria-label="Log out" title="Log out">⏻</button>
     </div>
   </div>
 
@@ -257,11 +258,20 @@
 </div></div>
 
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const SUPA_URL='https://hdawgsoopcucrcidbnoh.supabase.co';
 const SUPA_KEY='sb_publishable_wggkrr9ileMzn_oE_75l8A_7aiyl9DB';
 const EMAIL_DOMAIN='rkroulette.app';   // username "rk" -> rk@rkroulette.app
 const supa=createClient(SUPA_URL,SUPA_KEY);
+window.addEventListener('error',e=>{try{showBootError((e&&e.message)||'Script error');}catch(_){}});
+window.addEventListener('unhandledrejection',e=>{try{showBootError((e&&e.reason&&e.reason.message)||'Load error');}catch(_){}});
+function showBootError(msg){
+  let el=document.getElementById('bootErr');
+  if(!el){el=document.createElement('div');el.id='bootErr';
+    el.style.cssText='position:fixed;left:0;right:0;top:0;z-index:999;background:#7a1f1f;color:#fff;padding:10px 14px;font:13px system-ui;text-align:center';
+    document.body.appendChild(el);}
+  el.textContent='Couldn\'t load: '+msg+' — try reloading, or check your connection.';
+}
 (function(){
   const TAU=Math.PI*2;
   const SEQ=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
@@ -587,7 +597,7 @@ const supa=createClient(SUPA_URL,SUPA_KEY);
     btn.disabled=false;
     if(error){$('authErr').textContent=error.message;return;}
   }
-  $('loginBtn').addEventListener('pointerdown',doLogin);
+  $('loginBtn').addEventListener('click',doLogin);
   $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 
   let balChannel=null,entering=false,masterReady=false;
@@ -636,6 +646,18 @@ const supa=createClient(SUPA_URL,SUPA_KEY);
       <div class="pissue"><input class="amt" type="number" inputmode="numeric" placeholder="amount"/><button class="give">Give</button></div>
     </div>`).join('');
   }
+
+  $('logoutBtn').addEventListener('click',async()=>{
+    if(running)return;
+    await supa.auth.signOut();
+    if(balChannel){supa.removeChannel(balChannel);balChannel=null;}
+    me=null;entering=false;masterReady=false;
+    serverBalance=0;bets={};lastBets=null;sBet=0;sWin=0;rounds.length=0;
+    drawChips();renderTop();
+    $('masterBtn').style.display='none';
+    authgate.classList.remove('hide');
+    $('loginUser').value='';$('loginPass').value='';$('authErr').textContent='';
+  });
 
   spinBtn.addEventListener('pointerdown',spin);
   renderTop();
