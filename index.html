@@ -1,28 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>RK Roulette</title>
- <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>RK Roulette</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>RK Roulette</title>
 
-<!-- PASTE THE CODE HERE -->
-<link rel="manifest" href="./manifest.json" />
-<meta name="theme-color" content="#e8c874" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<link rel="apple-touch-icon" href="icon-192.png" />
+  <!-- PWA Settings -->
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#e8c874" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-...
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   :root{
     --bg:radial-gradient(130% 90% at 50% -10%,#0c4534 0%,#072a1f 55%,#041a13 100%);
     --brd:rgba(201,162,75,.30);--text:#f4ecd6;--muted:#b7a87f;--gold:#e8c874;--gold2:#c9a24b;
@@ -638,10 +633,7 @@ const supa=createClient(SUPA_URL,SUPA_KEY);
       <div class="pissue"><input class="amt" type="number" inputmode="numeric" placeholder="amount"/><button class="give">Give</button></div>
     </div>`).join('');
   }
-
-  spinBtn.addEventListener('pointerdown',spin);
-  renderTop();
- // Register service worker for PWA support
+// Register service worker for PWA support
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
@@ -652,8 +644,6 @@ const supa=createClient(SUPA_URL,SUPA_KEY);
 
   spinBtn.addEventListener('pointerdown',spin);
   renderTop();
-})(); // <-- This is the closing tag that marks the end of your script
-</script>
 })();
 </script>
 <div class="authgate" id="authgate">
