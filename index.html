@@ -57,6 +57,8 @@
   .iconbtn.sq{width:30px;padding:0}
 
   .glance{display:flex;align-items:center;gap:10px}
+  .ppill{flex:0 0 auto;font-size:10px;letter-spacing:.6px;color:var(--muted);border:1px solid var(--brd);border-radius:9px;padding:6px 10px;background:rgba(9,46,34,.55);white-space:nowrap}
+  .ppill.multi{color:var(--gold);border-color:var(--gold2)}
   .side{display:flex;align-items:center;gap:5px}
   .side .cap{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted)}
   .pnum{width:24px;height:24px;border-radius:7px;color:#fff;font-family:var(--num);font-weight:600;font-size:11px;display:grid;place-items:center;flex:0 0 auto}
@@ -169,6 +171,22 @@
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
   :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .feltwrap{position:relative}
+  .timerbox{position:absolute;right:12px;bottom:12px;width:64px;height:64px;display:none;z-index:5;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+  .timerbox.on{display:block}
+  .timerbox.urgent{animation:tpulse 1s ease-in-out infinite}
+  @keyframes tpulse{50%{transform:scale(1.08)}}
+  .lobby{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:24px;background:var(--bg)}
+  .lobby.hide{display:none}
+  .lobbyin{text-align:center;width:100%;max-width:640px}
+  .lobbyin h2{font-family:var(--display);font-size:26px;color:var(--gold);margin-bottom:18px}
+  .lobbycards{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .lcard{flex:1;min-width:220px;max-width:300px;border:1px solid var(--brd);border-radius:16px;background:rgba(9,46,34,.6);
+         color:var(--text);cursor:pointer;padding:22px 18px;text-align:center;transition:.2s}
+  .lcard:active{transform:scale(.97)}
+  .lcard .lic{display:block;font-size:26px;margin-bottom:8px;color:var(--gold)}
+  .lcard b{display:block;font-family:var(--display);font-size:19px;margin-bottom:6px}
+  .lcard small{display:block;font-size:11.5px;color:var(--muted);line-height:1.45}
 </style>
 </head>
 <body>
@@ -183,6 +201,7 @@
       <div class="stat"><div class="l">Net</div><div class="v" id="stNet">◈ 0</div></div>
     </div>
     <div class="balwrap">
+      <button class="iconbtn" id="modeBtn" style="display:none">Table</button>
       <button class="iconbtn" id="masterBtn" style="display:none">Issue chips</button>
       <button class="iconbtn" id="histBtn">History</button>
       <div class="bal"><div class="l">Balance</div><div class="v" id="bal">1,000</div></div>
@@ -192,12 +211,24 @@
   </div>
 
   <div class="glance">
+    <div class="ppill" id="presencePill">At table: you</div>
     <div class="side" id="coldSide"><span class="cap">Cold</span></div>
     <div class="belt" id="belt"><span class="empty">last 50 numbers appear here</span></div>
     <div class="side" id="hotSide"><span class="cap">Hot</span></div>
   </div>
 
-  <div class="feltwrap"><svg id="felt" viewBox="0 0 1005 268"></svg></div>
+  <div class="feltwrap"><svg id="felt" viewBox="0 0 1005 268"></svg>
+    <div class="timerbox" id="timerBox">
+      <svg viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="rgba(4,26,19,.88)" stroke="rgba(201,162,75,.35)" stroke-width="3"/>
+        <circle id="timerArc" cx="40" cy="40" r="34" fill="none" stroke="#e8c874" stroke-width="3" stroke-linecap="round"
+                stroke-dasharray="213.6" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+        <line id="timerHand" x1="40" y1="40" x2="40" y2="12" stroke="#e8c874" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="40" cy="40" r="3" fill="#e8c874"/>
+        <text id="timerText" x="40" y="63" font-family="Space Grotesk" font-size="12" fill="#f4ecd6" text-anchor="middle">45</text>
+      </svg>
+    </div>
+  </div>
 
   <div class="bottombar">
     <button class="ghost" id="rebet">Rebet</button>
@@ -213,6 +244,16 @@
     </div>
     <button class="ghost" id="clear">Clear</button>
     <button class="spin" id="spin" disabled>SPIN</button>
+  </div>
+</div>
+
+<div class="lobby hide" id="lobby">
+  <div class="lobbyin">
+    <h2>Choose your table</h2>
+    <div class="lobbycards">
+      <button class="lcard" id="soloCard"><span class="lic">♠</span><b>Single Player</b><small>Your own wheel. Spin when you like — or let the clock call it.</small></button>
+      <button class="lcard" id="sharedCard"><span class="lic">♥</span><b>Shared Table</b><small>One wheel for everyone. Bet together, watch the same ball land.</small></button>
+    </div>
   </div>
 </div>
 
@@ -318,20 +359,41 @@ function showBootError(msg){
     return st;}
 
   /* audio + global unlock */
-  let ac=null,muted=false;const M=document.getElementById('mute');
-  function ensure(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}}
+  let ac=null,comp=null,muted=false;const M=document.getElementById('mute');
+  function ensure(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();
+    comp=ac.createDynamicsCompressor();comp.connect(ac.destination);}catch(e){}}}
   function unlock(){ensure();if(ac&&ac.state==='suspended')ac.resume();
     if('speechSynthesis'in window){try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;window.speechSynthesis.speak(u);}catch(e){}}}
   window.addEventListener('pointerdown',unlock,{once:true});
   function blip(f,dur,g,type){if(muted||!ac)return;const o=ac.createOscillator(),ga=ac.createGain();
+    g=Math.min(0.3,g*2.2);
     o.type=type||'triangle';o.frequency.value=f;ga.gain.setValueAtTime(g,ac.currentTime);
-    ga.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.connect(ga);ga.connect(ac.destination);o.start();o.stop(ac.currentTime+dur);}
+    ga.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.connect(ga);ga.connect(comp||ac.destination);o.start();o.stop(ac.currentTime+dur);}
   function chime(){[523,659,784].forEach((f,i)=>setTimeout(()=>blip(f,.22,.07,'triangle'),i*95));}
-  function speak(num){if(muted||!('speechSynthesis'in window))return;
-    const color=num===0?'green':(REDS.has(num)?'red':'black');
-    const u=new SpeechSynthesisUtterance(num===0?'Zero. Green.':`${num}, ${color}.`);u.rate=.92;
+
+  /* croupier voice: prefers recorded clips in /voice, falls back to device TTS */
+  const voiceCache={};
+  function ttsSpeak(text){if(muted||!('speechSynthesis'in window))return;
+    const u=new SpeechSynthesisUtterance(text);u.rate=.92;u.volume=1;
     const vs=window.speechSynthesis.getVoices();const v=vs.find(x=>/en-GB/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang));if(v)u.voice=v;
     window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}
+  function say(clip,fallbackText){
+    if(muted)return;
+    let a=voiceCache[clip];
+    if(a===null){ttsSpeak(fallbackText);return;}          // known missing
+    if(a===undefined){
+      a=new Audio('voice/'+clip+'.mp3');a.volume=1;
+      a.addEventListener('error',()=>{voiceCache[clip]=null;},{once:true});
+      voiceCache[clip]=a;
+    }
+    a.currentTime=0;
+    const p=a.play();
+    if(p&&p.catch)p.catch(()=>{voiceCache[clip]=null;ttsSpeak(fallbackText);});
+  }
+  function speak(num){
+    const color=num===0?'green':(REDS.has(num)?'red':'black');
+    say('n'+num, num===0?'Zero. Green.':`${num}, ${color}.`);
+  }
   if('speechSynthesis'in window){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();}
   M.addEventListener('pointerdown',()=>{muted=!muted;M.textContent=muted?'✕':'♪';M.style.opacity=muted?'.5':'1';});
 
@@ -383,13 +445,14 @@ function showBootError(msg){
 
   /* state */
   let serverBalance=0,chip=5,bets={},lastBets=null,running=false;
+  let mode=null,bettingLocked=false,sharedRound=null,submittedStaked=0,curServerStaked=0,submitTmr=null,pendingRoundRow=null;
   let me=null,curServerBal=0,curServerPayout=0;
   let sBet=0,sWin=0;const rounds=[];
   const $=id=>document.getElementById(id);
   const balEl=$('bal'),spinBtn=$('spin');
   const fmt=n=>Math.round(n).toLocaleString('en-US');
   const total=()=>Object.values(bets).reduce((a,b)=>a+b,0);
-  const disp=()=>serverBalance-total();
+  const disp=()=>serverBalance-total()+(mode==='shared'?submittedStaked:0);
   function renderTop(skipBal){
     if(!skipBal)balEl.textContent=fmt(disp());const t=total();
     spinBtn.disabled=running||t===0;spinBtn.textContent=t>0?`SPIN ◈${fmt(t)}`:'SPIN';
@@ -406,22 +469,22 @@ function showBootError(msg){
 
   /* felt uses click (avoids misfires while adjusting finger / scrolling) */
   felt.addEventListener('click',e=>{
-    if(running)return;
+    if(running||bettingLocked||!mode)return;
     const r=felt.getBoundingClientRect(),px=(e.clientX-r.left)*1005/r.width,py=(e.clientY-r.top)*268/r.height;
     let best=-1,bd=1e9;zones.forEach((z,i)=>{const d=(z.x-px)**2+(z.y-py)**2;if(d<bd){bd=d;best=i;}});
     if(best<0||bd>26*26)return;
     if(disp()<chip){balEl.animate([{color:'#e8c874'},{color:'#ff6b6b'},{color:'#e8c874'}],{duration:500});return;}
-    bets[best]=(bets[best]||0)+chip;drawChips();renderTop();blip(880,.03,.03,'sine');
+    bets[best]=(bets[best]||0)+chip;drawChips();renderTop();blip(880,.03,.03,'sine');afterBetChange();
   });
 
   /* controls use pointerdown for snappier response */
   $('rack').addEventListener('pointerdown',e=>{const b=e.target.closest('.chip');if(!b)return;
     chip=+b.dataset.v;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b));});
-  $('clear').addEventListener('pointerdown',()=>{if(running)return;bets={};drawChips();renderTop();});
-  $('rebet').addEventListener('pointerdown',()=>{if(running||!lastBets)return;
+  $('clear').addEventListener('pointerdown',()=>{if(running||bettingLocked)return;bets={};drawChips();renderTop();afterBetChange();});
+  $('rebet').addEventListener('pointerdown',()=>{if(running||bettingLocked||!mode||!lastBets)return;
     const need=Object.values(lastBets).reduce((a,b)=>a+b,0);
     if(serverBalance<need){balEl.animate([{color:'#e8c874'},{color:'#ff6b6b'},{color:'#e8c874'}],{duration:500});return;}
-    bets=Object.assign({},lastBets);drawChips();renderTop();blip(880,.04,.04,'sine');});
+    bets=Object.assign({},lastBets);drawChips();renderTop();blip(880,.04,.04,'sine');afterBetChange();});
 
   /* history modal */
   const histModal=$('histModal');
@@ -489,25 +552,29 @@ function showBootError(msg){
   const RIDE=1.5, HOLD=2400;   // ride = wheel glides under seated ball; hold = result stays up (was 900)
   skipBtn.addEventListener('pointerdown',()=>{skipReq=true;skipBtn.classList.add('hide');});
 
-  async function spin(){
+  async function spin(){                       // SOLO: "spin now" button or timer auto-spin
+    if(mode!=='solo')return;
     if(running||total()===0)return;
-    running=true;renderTop();
-
-    // hand the bets to the server; it validates, draws the number, pays out — atomically
-    const p_bets=Object.keys(bets).map(zi=>({numbers:zones[zi].nums,amount:bets[zi]}));
+    running=true;bettingLocked=true;stopTimer();renderTop();
+    const p_bets=betsPayload();
     let data;
     try{
       const res=await supa.rpc('rk_spin',{p_bets});
       if(res.error)throw res.error;
       data=res.data;
     }catch(err){
-      running=false;renderTop();
+      running=false;bettingLocked=false;renderTop();
       toast((err&&err.message)?err.message:'Spin failed — check connection');
       return;
     }
-    const target=data.result,tIdx=SEQ.indexOf(target);
-    curServerPayout=Number(data.payout);curServerBal=Number(data.balance);
+    curServerPayout=Number(data.payout);curServerBal=Number(data.balance);curServerStaked=Number(data.staked);
+    animateSpin(Number(data.result),(Math.random()*1e9)|0);
+  }
 
+  /* animates toward a server-decided pocket; seed controls the ball path.
+     Shared mode passes the round id as seed so every phone sees the SAME path. */
+  function animateSpin(target,seed){
+    running=true;renderTop();
     ensure();if(ac&&ac.state==='suspended')ac.resume();
     winChip.classList.remove('show');winMsg.textContent='';glow.style.opacity='0';fxLayer.innerHTML='';
     skipReq=false;skipBtn.classList.remove('hide');
@@ -515,8 +582,7 @@ function showBootError(msg){
     renderPicks(bets);renderRecCols();
     spinview.classList.add('on');requestAnimationFrame(()=>spinview.classList.add('vis'));
 
-    // choose any seed, then offset the wheel so the ball lands on the SERVER's number
-    const seed=(Math.random()*1e9)|0;
+    const tIdx=SEQ.indexOf(target);
     let hs=makeState(seed),guard=0,simSteps=0;
     while(hs.phase!=='settle'&&guard++<5000){step(hs,1/120);simSteps++;}
     const capT=simSteps/120;
@@ -530,7 +596,7 @@ function showBootError(msg){
       if(skipReq&&!skipping){
         skipping=true;
         const tgt=Math.max(0,capT-0.5);
-        while(liveT<tgt&&live.phase!=='settle'){step(live,1/120);liveT+=1/120;}  // silent fast-forward
+        while(liveT<tgt&&live.phase!=='settle'){step(live,1/120);liveT+=1/120;}
         last=now;
       }
       let dt=(now-last)/1000;last=now;if(dt>1/30)dt=1/30;if(reduce)dt*=3.2;
@@ -560,8 +626,8 @@ function showBootError(msg){
   function announce(num){
     skipBtn.classList.add('hide');
     winChip.textContent=num;winChip.style.background=hex(num);winChip.classList.add('show');
-    let payout=0,staked=total();
-    for(const zi in bets){const z=zones[zi];if(z.nums.includes(num)){payout+=bets[zi]*z.mult;
+    const staked=curServerStaked,payout=curServerPayout;   // server's numbers are the truth
+    for(const zi in bets){const z=zones[zi];if(z.nums.includes(num)){
       const pk=document.querySelector(`.pick[data-zi="${zi}"]`);if(pk)pk.classList.add('won');}}
     const net=payout-staked;
     winMsg.textContent=(num===0?'Zero':(REDS.has(num)?'Red':'Black'))+(net>0?` — win ◈${fmt(net)}`:net===0?' — push':` — lost ◈${fmt(-net)}`);
@@ -572,18 +638,26 @@ function showBootError(msg){
   function finish(num,idx,spinAng){
     glow.setAttribute('d',pocketPath(idx));glow.setAttribute('transform',`rotate(${(wa0+spinAng)*180/Math.PI} 200 200)`);
     glow.style.transition='opacity .25s';glow.style.opacity='1';
-    let staked=total(),fx='';
+    const staked=curServerStaked;let fx='';
     for(const zi in bets){const z=zones[zi];if(z.nums.includes(num)){fx+=`<circle class="wonzone" cx="${z.x}" cy="${z.y}" r="18"/>`;}}
     fxLayer.innerHTML=fx;
     const payout=curServerPayout;
     sBet+=staked;sWin+=payout;rounds.unshift({bet:staked,payout,net:payout-staked});
-    const fromDisp=serverBalance-staked;
+    const fromDisp=mode==='shared'?serverBalance:serverBalance-staked;
     serverBalance=curServerBal;
-    bets={};drawChips();running=false;renderTop(true);
+    bets={};submittedStaked=0;drawChips();running=false;bettingLocked=false;renderTop(true);
     (function cu(){const t0=performance.now(),dur=600;
       function f(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);balEl.textContent=fmt(fromDisp+(serverBalance-fromDisp)*e);if(p<1)requestAnimationFrame(f);else balEl.textContent=fmt(serverBalance);}requestAnimationFrame(f);})();
     pushHist(num);
-    setTimeout(()=>{spinview.classList.remove('vis');setTimeout(()=>spinview.classList.remove('on'),380);},HOLD);
+    setTimeout(()=>{spinview.classList.remove('vis');setTimeout(()=>{spinview.classList.remove('on');afterRoundClosed();},380);},HOLD);
+  }
+
+  function afterRoundClosed(){
+    if(mode==='solo'){setTimeout(()=>say('place_bets','Place your bets.'),300);}
+    else if(mode==='shared'){
+      sharedRound=null;
+      if(pendingRoundRow){const r=pendingRoundRow;pendingRoundRow=null;handleRoundRow(r);}
+    }
   }
 
   /* ---------- toast ---------- */
@@ -592,10 +666,11 @@ function showBootError(msg){
   /* ---------- auth ---------- */
   const authgate=$('authgate');
   async function doLogin(){
+    const btn=$('loginBtn');if(btn.disabled)return;
     const u=$('loginUser').value.trim().toLowerCase(),p=$('loginPass').value;
     if(!u||!p){$('authErr').textContent='Enter username and password';return;}
     const email=u.includes('@')?u:`${u}@${EMAIL_DOMAIN}`;
-    const btn=$('loginBtn');btn.disabled=true;$('authErr').textContent='';
+    btn.disabled=true;$('authErr').textContent='';
     const {error}=await supa.auth.signInWithPassword({email,password:p});
     btn.disabled=false;
     if(error){$('authErr').textContent=error.message;return;}
@@ -613,10 +688,13 @@ function showBootError(msg){
     $('tableLabel').textContent=prof.display_name+"'s table";
     renderTop();authgate.classList.add('hide');
     if(prof.role==='master')setupMaster();
+    $('lobby').classList.remove('hide');
     if(balChannel)supa.removeChannel(balChannel);
     balChannel=supa.channel('bal-'+uid)
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles',filter:'id=eq.'+uid},payload=>{
-        serverBalance=Number(payload.new.balance);if(!running)renderTop();
+        serverBalance=Number(payload.new.balance);
+        if(mode==='solo'&&!running&&total()>serverBalance){bets={};drawChips();toast('Balance changed — bets cleared');}
+        if(!running)renderTop();
       }).subscribe();
   }
   supa.auth.getSession().then(({data})=>{if(data.session)enterGame(data.session);});
@@ -650,9 +728,184 @@ function showBootError(msg){
     </div>`).join('');
   }
 
+  /* ---------- round timer (uniform: solo + shared) ---------- */
+  let clockSkew=0;const nowServer=()=>Date.now()+clockSkew;
+  const TIMER_SECS=45,ARC_LEN=213.6;
+  let timer={active:false,endsMs:0,warned:false,fired:false};
+  function startTimer(endsMs){timer={active:true,endsMs,warned:false,fired:false};$('timerBox').classList.add('on');}
+  function stopTimer(){timer.active=false;$('timerBox').classList.remove('on');$('timerBox').classList.remove('urgent');}
+  setInterval(()=>{
+    if(!timer.active)return;
+    const rem=Math.max(0,(timer.endsMs-nowServer())/1000);
+    $('timerText').textContent=Math.ceil(rem);
+    const frac=Math.min(1,rem/TIMER_SECS);
+    $('timerArc').style.strokeDashoffset=(ARC_LEN*(1-frac)).toFixed(1);
+    $('timerHand').setAttribute('transform',`rotate(${(360*(1-frac)).toFixed(1)} 40 40)`);
+    if(rem<=10&&!timer.warned){timer.warned=true;say('ten_seconds','Ten seconds remaining.');$('timerBox').classList.add('urgent');}
+    if(rem<=0&&!timer.fired){timer.fired=true;$('timerBox').classList.remove('urgent');onTimerZero();}
+  },120);
+  function onTimerZero(){
+    bettingLocked=true;say('no_more_bets','No more bets.');
+    if(mode==='solo'){
+      setTimeout(()=>{if(total()>0)spin();else{bettingLocked=false;stopTimer();}},800);
+    }else{
+      clearTimeout(submitTmr);
+      setTimeout(()=>{submitBets(true).then(()=>resolveShared());},700);
+    }
+  }
+
+  /* ---------- bet-change routing ---------- */
+  function betsPayload(){return Object.keys(bets).map(zi=>({numbers:zones[zi].nums,amount:bets[zi]}));}
+  function afterBetChange(){
+    if(mode==='solo'){
+      if(total()>0){if(!timer.active)startTimer(Date.now()+TIMER_SECS*1000);}
+      else stopTimer();
+    }else if(mode==='shared'){
+      clearTimeout(submitTmr);submitTmr=setTimeout(()=>submitBets(false),900);
+    }
+  }
+  async function submitBets(force){
+    if(mode!=='shared'||running)return;
+    if(!sharedRound){
+      if(total()===0)return;
+      try{
+        const {data,error}=await supa.rpc('rk_open_round',{p_seconds:TIMER_SECS});
+        if(error)throw error;
+        clockSkew=new Date(data.server_now).getTime()-Date.now();
+        adoptRound(data);
+      }catch(err){toast(err.message||'Could not open round');return;}
+    }
+    if(!sharedRound||(bettingLocked&&!force))return;
+    if(total()===0){
+      if(submittedStaked>0&&sharedRound){
+        try{const {data,error}=await supa.rpc('rk_clear_shared_bets',{p_round:sharedRound.id});
+          if(error)throw error;
+          submittedStaked=0;serverBalance=Number(data.balance);renderTop();
+        }catch(err){toast(err.message||'Could not clear bets');}
+      }
+      return;
+    }
+    try{
+      const {data,error}=await supa.rpc('rk_place_shared_bets',{p_round:sharedRound.id,p_bets:betsPayload()});
+      if(error)throw error;
+      submittedStaked=Number(data.staked);serverBalance=Number(data.balance);renderTop();
+    }catch(err){
+      const m=err.message||'';
+      if(/no more bets/i.test(m))bettingLocked=true;
+      else toast(m||'Bet not accepted');
+    }
+  }
+
+  /* ---------- shared rounds ---------- */
+  let animatedRound=0,resolving=false,roundsChannel=null;
+  function adoptRound(r){
+    if(!r||r.status==='done')return;
+    const endsMs=new Date(r.betting_ends_at).getTime();
+    if(endsMs<=nowServer()){resolveShared(Number(r.id),true);return;}
+    if(!sharedRound||sharedRound.id!==Number(r.id)){
+      sharedRound={id:Number(r.id),endsMs};
+      bettingLocked=false;submittedStaked=0;
+      say('place_bets','Place your bets.');
+      startTimer(endsMs);
+    }
+  }
+  async function resolveShared(id,cleanup){
+    id=id||(sharedRound&&sharedRound.id);
+    if(!id||resolving||animatedRound===id)return;
+    resolving=true;
+    try{
+      const {data,error}=await supa.rpc('rk_spin_shared',{p_round:id});
+      if(error)throw error;
+      resolving=false;
+      if(animatedRound===id)return;
+      animatedRound=id;stopTimer();bettingLocked=true;
+      curServerPayout=Number(data.payout);curServerBal=Number(data.balance);curServerStaked=Number(data.staked);
+      if(cleanup&&curServerStaked===0){serverBalance=curServerBal;sharedRound=null;bettingLocked=false;renderTop();return;}
+      animateSpin(Number(data.result),Number(id)%2147483647);
+    }catch(err){
+      resolving=false;
+      if(/betting still open/i.test(err.message||''))setTimeout(()=>resolveShared(id,cleanup),600);
+      else toast(err.message||'Could not resolve round');
+    }
+  }
+  function watchRounds(){
+    if(roundsChannel)return;
+    roundsChannel=supa.channel('rounds-watch')
+      .on('postgres_changes',{event:'*',schema:'public',table:'table_rounds'},p=>handleRoundRow(p.new))
+      .subscribe();
+  }
+  function unwatchRounds(){if(roundsChannel){supa.removeChannel(roundsChannel);roundsChannel=null;}}
+  function handleRoundRow(row){
+    if(mode!=='shared'||!row)return;
+    if(running){pendingRoundRow=row;return;}
+    if(row.status==='betting')adoptRound(row);
+    else if(row.status==='done'&&row.result!==null&&sharedRound&&Number(row.id)===sharedRound.id)resolveShared(Number(row.id),false);
+  }
+
+  /* ---------- lobby / mode ---------- */
+  async function setMode(m){
+    mode=m;bettingLocked=false;bets={};submittedStaked=0;sharedRound=null;drawChips();stopTimer();
+    $('lobby').classList.add('hide');
+    const mb=$('modeBtn');mb.style.display='';mb.textContent=m==='solo'?'Table: Solo':'Table: Shared';
+    spinBtn.style.display=m==='shared'?'none':'';
+    $('presencePill').style.display=m==='shared'?'':'none';
+    renderTop();
+    if(m==='solo'){
+      leaveTable();unwatchRounds();
+      setTimeout(()=>say('place_bets','Place your bets.'),350);
+    }else{
+      joinTable();watchRounds();
+      try{const {data,error}=await supa.rpc('rk_now');
+        if(!error&&data)clockSkew=new Date(data).getTime()-Date.now();}catch(e){}
+      try{const {data,error}=await supa.from('table_rounds').select('*').order('id',{ascending:false}).limit(1);
+        if(!error&&data&&data[0])handleRoundRow(data[0]);}catch(e){}
+    }
+  }
+  function backToLobby(){
+    if(running)return;
+    if(mode==='shared'&&submittedStaked>0&&sharedRound){
+      supa.rpc('rk_clear_shared_bets',{p_round:sharedRound.id})
+        .then(({data})=>{if(data){serverBalance=Number(data.balance);renderTop();}});
+    }
+    mode=null;bets={};submittedStaked=0;sharedRound=null;bettingLocked=false;drawChips();stopTimer();
+    leaveTable();unwatchRounds();
+    $('modeBtn').style.display='none';
+    $('lobby').classList.remove('hide');
+  }
+  $('modeBtn').addEventListener('click',backToLobby);
+  $('soloCard').addEventListener('click',()=>setMode('solo'));
+  $('sharedCard').addEventListener('click',()=>setMode('shared'));
+
+  /* ---------- presence: who's at the table ---------- */
+  let tableChannel=null,presenceNames=[],presenceCount=1;
+  function renderPresence(){
+    const el=$('presencePill');if(!el)return;
+    if(presenceNames.length<=1){el.textContent='At table: you';el.classList.remove('multi');}
+    else{el.textContent='At table: '+presenceNames.join(' · ');el.classList.add('multi');}
+  }
+  function joinTable(){
+    if(tableChannel)return;
+    tableChannel=supa.channel('rk-table',{config:{presence:{key:me.id}}});
+    tableChannel.on('presence',{event:'sync'},()=>{
+      const st=tableChannel.presenceState();
+      const names=[];for(const k in st)st[k].forEach(e=>{if(e.name&&!names.includes(e.name))names.push(e.name);});
+      presenceNames=names;presenceCount=Math.max(1,names.length);
+      renderPresence();
+    }).subscribe(async status=>{
+      if(status==='SUBSCRIBED')await tableChannel.track({name:me.display_name});
+    });
+  }
+  function leaveTable(){
+    if(tableChannel){supa.removeChannel(tableChannel);tableChannel=null;}
+    presenceNames=[];presenceCount=1;renderPresence();
+  }
+
   $('logoutBtn').addEventListener('click',async()=>{
     if(running)return;
     await supa.auth.signOut();
+    leaveTable();unwatchRounds();
+    mode=null;sharedRound=null;submittedStaked=0;bettingLocked=false;stopTimer();
+    $('modeBtn').style.display='none';$('lobby').classList.add('hide');
     if(balChannel){supa.removeChannel(balChannel);balChannel=null;}
     me=null;entering=false;masterReady=false;
     serverBalance=0;bets={};lastBets=null;sBet=0;sWin=0;rounds.length=0;
