@@ -97,7 +97,7 @@
             background:radial-gradient(120% 100% at 50% 0%,rgba(10,58,43,.97),rgba(4,22,15,.985));backdrop-filter:blur(6px);opacity:0;transition:opacity .35s}
   .spinview.on{display:flex}
   .spinview.vis{opacity:1}
-  .sv-side{width:168px;max-height:92vh;overflow-y:auto;border:1px solid var(--brd);border-radius:12px;background:rgba(9,46,34,.5);padding:9px;scrollbar-width:none;align-self:stretch}
+  .sv-side{width:150px;max-height:92vh;overflow-y:auto;border:1px solid var(--brd);border-radius:12px;background:rgba(9,46,34,.5);padding:9px;scrollbar-width:none;align-self:stretch}
   .sv-side::-webkit-scrollbar{display:none}
   .sv-cap{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:8px}
   .pick{display:flex;align-items:center;gap:7px;margin-bottom:6px;padding:5px 6px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid transparent;transition:.3s}
@@ -114,7 +114,7 @@
   .recnum{width:26px;height:22px;border-radius:6px;color:#fff;font-family:var(--num);font-weight:600;font-size:10px;display:grid;place-items:center}
 
   .sv-center{display:flex;flex-direction:column;align-items:center;gap:9px}
-  .bowl{width:min(70vh,46vw,520px);aspect-ratio:1;border-radius:50%;box-shadow:0 18px 34px rgba(0,0,0,.55)}
+  .bowl{width:min(82vh,52vw,600px);aspect-ratio:1;border-radius:50%;box-shadow:0 18px 34px rgba(0,0,0,.55)}
   .bowl svg{width:100%;height:100%;display:block;overflow:visible}
   .num-txt{font-family:var(--num);font-weight:600;fill:#fbf4e2}
   .diamond{fill:url(#brass)}
@@ -222,7 +222,7 @@
       <svg viewBox="0 0 80 80">
         <circle cx="40" cy="40" r="34" fill="rgba(4,26,19,.88)" stroke="rgba(201,162,75,.35)" stroke-width="3"/>
         <circle id="timerArc" cx="40" cy="40" r="34" fill="none" stroke="#e8c874" stroke-width="3" stroke-linecap="round"
-                stroke-dasharray="213.6" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+                stroke-dasharray="213.6" stroke-dashoffset="213.6" transform="rotate(-90 40 40)"/>
         <line id="timerHand" x1="40" y1="40" x2="40" y2="12" stroke="#e8c874" stroke-width="2.5" stroke-linecap="round"/>
         <circle cx="40" cy="40" r="3" fill="#e8c874"/>
         <text id="timerText" x="40" y="63" font-family="Space Grotesk" font-size="12" fill="#f4ecd6" text-anchor="middle">45</text>
@@ -330,7 +330,7 @@ function showBootError(msg){
     const [x1,y1]=p(POCKET_OUT,a1),[x2,y2]=p(POCKET_OUT,a2),[x3,y3]=p(POCKET_IN,a2),[x4,y4]=p(POCKET_IN,a1);
     s+=`<path d="M${x1} ${y1} A${POCKET_OUT} ${POCKET_OUT} 0 0 1 ${x2} ${y2} L${x3} ${y3} A${POCKET_IN} ${POCKET_IN} 0 0 0 ${x4} ${y4} Z" fill="${hex(n)}" stroke="#d9b45f" stroke-width=".8"/>`;
     const nx=CX+R_NUM*Math.cos(c),ny=CY+R_NUM*Math.sin(c);
-    s+=`<text class="num-txt" x="${nx.toFixed(2)}" y="${ny.toFixed(2)}" font-size="11" text-anchor="middle" dominant-baseline="central" transform="rotate(${(c*180/Math.PI+90).toFixed(1)} ${nx.toFixed(2)} ${ny.toFixed(2)})">${n}</text>`;});
+    s+=`<text class="num-txt" x="${nx.toFixed(2)}" y="${ny.toFixed(2)}" font-size="13" text-anchor="middle" dominant-baseline="central" transform="rotate(${(c*180/Math.PI+90).toFixed(1)} ${nx.toFixed(2)} ${ny.toFixed(2)})">${n}</text>`;});
   wheelEl.innerHTML=s;
   const DIA=[];let ds='';
   for(let k=0;k<8;k++){const a=-Math.PI/2+k*(TAU/8);DIA.push(a);
@@ -366,29 +366,53 @@ function showBootError(msg){
     if('speechSynthesis'in window){try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;window.speechSynthesis.speak(u);}catch(e){}}}
   window.addEventListener('pointerdown',unlock,{once:true});
   function blip(f,dur,g,type){if(muted||!ac)return;const o=ac.createOscillator(),ga=ac.createGain();
-    g=Math.min(0.3,g*2.2);
+    g=Math.min(0.5,g*3);
     o.type=type||'triangle';o.frequency.value=f;ga.gain.setValueAtTime(g,ac.currentTime);
     ga.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.connect(ga);ga.connect(comp||ac.destination);o.start();o.stop(ac.currentTime+dur);}
   function chime(){[523,659,784].forEach((f,i)=>setTimeout(()=>blip(f,.22,.07,'triangle'),i*95));}
+  let rollSrc=null,rollGain=null;
+  function startRoll(){if(muted||!ac)return;stopRoll();
+    const len=ac.sampleRate;const buf=ac.createBuffer(1,len,ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+    rollSrc=ac.createBufferSource();rollSrc.buffer=buf;rollSrc.loop=true;
+    const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=750;bp.Q.value=1.1;
+    rollGain=ac.createGain();rollGain.gain.value=0;
+    rollSrc.connect(bp);bp.connect(rollGain);rollGain.connect(comp||ac.destination);
+    rollSrc.start();}
+  function setRoll(v){if(rollGain&&ac)rollGain.gain.setTargetAtTime(Math.min(.3,v),ac.currentTime,.08);}
+  function stopRoll(){if(rollSrc){try{rollSrc.stop()}catch(e){}rollSrc=null;rollGain=null;}}
+  function whoosh(){if(muted||!ac)return;const o=ac.createOscillator(),g=ac.createGain();
+    o.type='sawtooth';o.frequency.setValueAtTime(240,ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(90,ac.currentTime+.6);
+    g.gain.setValueAtTime(.14,ac.currentTime);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+.6);
+    o.connect(g);g.connect(comp||ac.destination);o.start();o.stop(ac.currentTime+.6);}
 
-  /* croupier voice: prefers recorded clips in /voice, falls back to device TTS */
-  const voiceCache={};
+  /* croupier voice: recorded clips in /voice played via WebAudio (volume-matched), TTS fallback */
+  const voiceBuf={};
   function ttsSpeak(text){if(muted||!('speechSynthesis'in window))return;
-    const u=new SpeechSynthesisUtterance(text);u.rate=.92;u.volume=1;
+    const u=new SpeechSynthesisUtterance(text);u.rate=.92;u.volume=.85;
     const vs=window.speechSynthesis.getVoices();const v=vs.find(x=>/en-GB/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang));if(v)u.voice=v;
     window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}
+  async function loadClip(clip){
+    if(clip in voiceBuf)return voiceBuf[clip];
+    try{
+      const res=await fetch('voice/'+clip+'.mp3');
+      if(!res.ok)throw 0;
+      const ab=await res.arrayBuffer();
+      voiceBuf[clip]=await ac.decodeAudioData(ab);
+    }catch(e){voiceBuf[clip]=null;}
+    return voiceBuf[clip];
+  }
   function say(clip,fallbackText){
     if(muted)return;
-    let a=voiceCache[clip];
-    if(a===null){ttsSpeak(fallbackText);return;}          // known missing
-    if(a===undefined){
-      a=new Audio('voice/'+clip+'.mp3');a.volume=1;
-      a.addEventListener('error',()=>{voiceCache[clip]=null;},{once:true});
-      voiceCache[clip]=a;
-    }
-    a.currentTime=0;
-    const p=a.play();
-    if(p&&p.catch)p.catch(()=>{voiceCache[clip]=null;ttsSpeak(fallbackText);});
+    ensure();
+    if(!ac){ttsSpeak(fallbackText);return;}
+    loadClip(clip).then(buf=>{
+      if(!buf){ttsSpeak(fallbackText);return;}
+      const src=ac.createBufferSource(),g=ac.createGain();
+      src.buffer=buf;g.gain.value=1.9;
+      src.connect(g);g.connect(comp||ac.destination);src.start();
+    });
   }
   function speak(num){
     const color=num===0?'green':(REDS.has(num)?'red':'black');
@@ -550,7 +574,7 @@ function showBootError(msg){
   /* spin */
   let wa0=0,skipReq=false;
   const RIDE=1.5, HOLD=2400;   // ride = wheel glides under seated ball; hold = result stays up (was 900)
-  skipBtn.addEventListener('pointerdown',()=>{skipReq=true;skipBtn.classList.add('hide');});
+  skipBtn.addEventListener('pointerdown',()=>{if(mode==='shared')return;skipReq=true;skipBtn.classList.add('hide');});
 
   async function spin(){                       // SOLO: "spin now" button or timer auto-spin
     if(mode!=='solo')return;
@@ -576,8 +600,9 @@ function showBootError(msg){
   function animateSpin(target,seed){
     running=true;renderTop();
     ensure();if(ac&&ac.state==='suspended')ac.resume();
+    whoosh();startRoll();
     winChip.classList.remove('show');winMsg.textContent='';glow.style.opacity='0';fxLayer.innerHTML='';
-    skipReq=false;skipBtn.classList.remove('hide');
+    skipReq=false;if(mode==='shared')skipBtn.classList.add('hide');else skipBtn.classList.remove('hide');
     lastBets=Object.assign({},bets);
     renderPicks(bets);renderRecCols();
     spinview.classList.add('on');requestAnimationFrame(()=>spinview.classList.add('vis'));
@@ -603,7 +628,8 @@ function showBootError(msg){
       step(live,dt);liveT+=dt;
       if(live.clack)blip(1500,.03,.06,'square');
       if(live.tick)blip(900,.02,.045,'triangle');
-      if(live.plunk)blip(180,.14,.09,'sine');
+      if(live.plunk){blip(180,.14,.09,'sine');stopRoll();}
+      if(live.phase==='orbit')setRoll(Math.abs(live.bv)*.03);else if(live.phase==='drop')setRoll(Math.abs(live.bv)*.02);
       let spinAng=live.wheelSpin;
       wheelEl.setAttribute('transform',`rotate(${(wa0+spinAng)*180/Math.PI} 200 200)`);
       let br=live.br,ba=live.ba;
@@ -636,6 +662,7 @@ function showBootError(msg){
   }
 
   function finish(num,idx,spinAng){
+    stopRoll();
     glow.setAttribute('d',pocketPath(idx));glow.setAttribute('transform',`rotate(${(wa0+spinAng)*180/Math.PI} 200 200)`);
     glow.style.transition='opacity .25s';glow.style.opacity='1';
     const staked=curServerStaked;let fx='';
@@ -657,7 +684,17 @@ function showBootError(msg){
     else if(mode==='shared'){
       sharedRound=null;
       if(pendingRoundRow){const r=pendingRoundRow;pendingRoundRow=null;handleRoundRow(r);}
+      else openNextRound();   // continuous rounds: next betting window opens immediately
     }
+  }
+  async function openNextRound(){
+    if(mode!=='shared'||sharedRound||running)return;
+    try{
+      const {data,error}=await supa.rpc('rk_open_round',{p_seconds:TIMER_SECS});
+      if(error)throw error;
+      clockSkew=new Date(data.server_now).getTime()-Date.now();
+      adoptRound(data);
+    }catch(e){}
   }
 
   /* ---------- toast ---------- */
@@ -730,7 +767,7 @@ function showBootError(msg){
 
   /* ---------- round timer (uniform: solo + shared) ---------- */
   let clockSkew=0;const nowServer=()=>Date.now()+clockSkew;
-  const TIMER_SECS=45,ARC_LEN=213.6;
+  const TIMER_SECS=30,ARC_LEN=213.6;
   let timer={active:false,endsMs:0,warned:false,fired:false};
   function startTimer(endsMs){timer={active:true,endsMs,warned:false,fired:false};$('timerBox').classList.add('on');}
   function stopTimer(){timer.active=false;$('timerBox').classList.remove('on');$('timerBox').classList.remove('urgent');}
@@ -739,18 +776,25 @@ function showBootError(msg){
     const rem=Math.max(0,(timer.endsMs-nowServer())/1000);
     $('timerText').textContent=Math.ceil(rem);
     const frac=Math.min(1,rem/TIMER_SECS);
-    $('timerArc').style.strokeDashoffset=(ARC_LEN*(1-frac)).toFixed(1);
+    $('timerArc').style.strokeDashoffset=(ARC_LEN*frac).toFixed(1);   // fill grows clockwise with the hand
     $('timerHand').setAttribute('transform',`rotate(${(360*(1-frac)).toFixed(1)} 40 40)`);
     if(rem<=10&&!timer.warned){timer.warned=true;say('ten_seconds','Ten seconds remaining.');$('timerBox').classList.add('urgent');}
     if(rem<=0&&!timer.fired){timer.fired=true;$('timerBox').classList.remove('urgent');onTimerZero();}
   },120);
   function onTimerZero(){
-    bettingLocked=true;say('no_more_bets','No more bets.');
+    bettingLocked=true;
     if(mode==='solo'){
+      say('no_more_bets','No more bets.');
       setTimeout(()=>{if(total()>0)spin();else{bettingLocked=false;stopTimer();}},800);
     }else{
       clearTimeout(submitTmr);
-      setTimeout(()=>{submitBets(true).then(()=>resolveShared());},700);
+      const rid=sharedRound?sharedRound.id:0;
+      submitBets(true).then(async()=>{
+        let cnt=0;
+        try{const {count}=await supa.from('round_bets').select('*',{count:'exact',head:true}).eq('round_id',rid);cnt=count??0;}catch(e){}
+        if(cnt>0){say('no_more_bets','No more bets.');setTimeout(()=>resolveShared(),700);}
+        else{stopTimer();bettingLocked=false;sharedRound=null;}   // empty round: pause until next chip
+      });
     }
   }
 
@@ -820,7 +864,7 @@ function showBootError(msg){
       if(animatedRound===id)return;
       animatedRound=id;stopTimer();bettingLocked=true;
       curServerPayout=Number(data.payout);curServerBal=Number(data.balance);curServerStaked=Number(data.staked);
-      if(cleanup&&curServerStaked===0){serverBalance=curServerBal;sharedRound=null;bettingLocked=false;renderTop();return;}
+      if(cleanup&&curServerStaked===0){serverBalance=curServerBal;sharedRound=null;bettingLocked=false;renderTop();openNextRound();setTimeout(()=>submitBets(false),450);return;}
       animateSpin(Number(data.result),Number(id)%2147483647);
     }catch(err){
       resolving=false;
