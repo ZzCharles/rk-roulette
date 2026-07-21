@@ -370,17 +370,48 @@ function showBootError(msg){
     o.type=type||'triangle';o.frequency.value=f;ga.gain.setValueAtTime(g,ac.currentTime);
     ga.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+dur);o.connect(ga);ga.connect(comp||ac.destination);o.start();o.stop(ac.currentTime+dur);}
   function chime(){[523,659,784].forEach((f,i)=>setTimeout(()=>blip(f,.22,.07,'triangle'),i*95));}
-  let rollSrc=null,rollGain=null;
+  /* ball-rolling sound: layered "wood rumble", not hiss.
+     Layer 1: brown noise (deep rumble, almost no treble)
+     Layer 2: lowpass + gentle resonance = wooden body
+     Layer 3: tremolo (LFO) chopping the rumble into a grain whose
+              rate AND pitch follow the ball's speed, so you hear it slow down */
+  let rollSrc=null,rollGain=null,rollLFO=null,rollLP=null,rollLFOGain=null;
   function startRoll(){if(muted||!ac)return;stopRoll();
-    const len=ac.sampleRate;const buf=ac.createBuffer(1,len,ac.sampleRate);
-    const d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+    const len=ac.sampleRate*2,buf=ac.createBuffer(1,len,ac.sampleRate);
+    const d=buf.getChannelData(0);
+    let last=0;
+    for(let i=0;i<len;i++){                       // brown noise: integrate white
+      const w=Math.random()*2-1;
+      last=(last+0.02*w)/1.02;
+      d[i]=last*3.5;
+    }
     rollSrc=ac.createBufferSource();rollSrc.buffer=buf;rollSrc.loop=true;
-    const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=750;bp.Q.value=1.1;
+    rollLP=ac.createBiquadFilter();rollLP.type='lowpass';rollLP.frequency.value=420;rollLP.Q.value=1.4;
+    const body=ac.createBiquadFilter();body.type='peaking';body.frequency.value=180;body.gain.value=7;body.Q.value=1.0;
     rollGain=ac.createGain();rollGain.gain.value=0;
-    rollSrc.connect(bp);bp.connect(rollGain);rollGain.connect(comp||ac.destination);
-    rollSrc.start();}
-  function setRoll(v){if(rollGain&&ac)rollGain.gain.setTargetAtTime(Math.min(.3,v),ac.currentTime,.08);}
-  function stopRoll(){if(rollSrc){try{rollSrc.stop()}catch(e){}rollSrc=null;rollGain=null;}}
+    // tremolo: LFO wobbles the gain to make the rolling "grain"
+    rollLFO=ac.createOscillator();rollLFO.type='sine';rollLFO.frequency.value=22;
+    rollLFOGain=ac.createGain();rollLFOGain.gain.value=0;
+    rollLFO.connect(rollLFOGain);rollLFOGain.connect(rollGain.gain);
+    rollSrc.connect(rollLP);rollLP.connect(body);body.connect(rollGain);rollGain.connect(comp||ac.destination);
+    rollSrc.start();rollLFO.start();
+  }
+  function setRoll(speed){                        // speed = |ball angular velocity|
+    if(!rollGain||!ac)return;
+    const t=ac.currentTime;
+    const norm=Math.min(1,speed/10);              // 0..1 across the ball's speed range
+    const vol=Math.min(.34,.06+norm*.3);
+    rollGain.gain.setTargetAtTime(vol,t,.08);
+    rollLFOGain.gain.setTargetAtTime(vol*.55,t,.08);           // grain depth rides volume
+    rollLFO.frequency.setTargetAtTime(6+norm*26,t,.1);         // grain rate slows with the ball
+    rollLP.frequency.setTargetAtTime(260+norm*380,t,.1);       // tone darkens as it slows
+  }
+  function stopRoll(){
+    if(rollGain&&ac)rollGain.gain.setTargetAtTime(0,ac.currentTime,.05);
+    const s=rollSrc,l=rollLFO;
+    rollSrc=null;rollGain=null;rollLFO=null;rollLP=null;rollLFOGain=null;
+    if(s)setTimeout(()=>{try{s.stop()}catch(e){}try{l&&l.stop()}catch(e){}},260); // let the fade finish
+  }
   function whoosh(){if(muted||!ac)return;const o=ac.createOscillator(),g=ac.createGain();
     o.type='sawtooth';o.frequency.setValueAtTime(240,ac.currentTime);
     o.frequency.exponentialRampToValueAtTime(90,ac.currentTime+.6);
@@ -629,7 +660,7 @@ function showBootError(msg){
       if(live.clack)blip(1500,.03,.06,'square');
       if(live.tick)blip(900,.02,.045,'triangle');
       if(live.plunk){blip(180,.14,.09,'sine');stopRoll();}
-      if(live.phase==='orbit')setRoll(Math.abs(live.bv)*.03);else if(live.phase==='drop')setRoll(Math.abs(live.bv)*.02);
+      if(live.phase==='orbit')setRoll(Math.abs(live.bv));else if(live.phase==='drop')setRoll(Math.abs(live.bv)*.7);
       let spinAng=live.wheelSpin;
       wheelEl.setAttribute('transform',`rotate(${(wa0+spinAng)*180/Math.PI} 200 200)`);
       let br=live.br,ba=live.ba;
