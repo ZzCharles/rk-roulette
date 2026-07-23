@@ -285,6 +285,14 @@
   .belt{flex:1 1 auto;min-width:0;min-height:34px;display:flex;align-items:center;
         padding:0 5px;border-radius:10px}
   .belt .pnum{width:24px;height:24px;font-size:11px}
+  /* recent panel: one row per spin, aligned turn by turn */
+  .reccols{display:flex;flex-direction:column;gap:3px;grid-template-columns:none}
+  .rechead{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:3px}
+  .rechead span{font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);text-align:center}
+  .recrow{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+  .recnum{width:100%;height:21px;border-radius:6px;font-size:10.5px}
+  .recgap{height:21px;border-radius:6px;background:rgba(255,255,255,.025)}
+  .recempty{font-size:10px;color:var(--muted);text-align:center;padding:8px 0}
 </style>
 </head>
 <body>
@@ -728,11 +736,15 @@ function showBootError(msg){
     mk(cold,$('coldSide'));mk(hot,$('hotSide'));
   }
   function renderRecCols(){
-    const reds=hist.filter(n=>REDS.has(n)).slice(0,16);
-    const greens=hist.filter(n=>n===0).slice(0,16);
-    const blacks=hist.filter(n=>n!==0&&!REDS.has(n)).slice(0,16);
-    const col=(title,arr)=>`<div class="reccol"><h4>${title}</h4>${arr.map(n=>`<span class="recnum" style="background:${hex(n)}">${n}</span>`).join('')}</div>`;
-    $('recCols').innerHTML=col('Red',reds)+col('Green',greens)+col('Black',blacks);
+    const head='<div class="rechead"><span>Red</span><span>Green</span><span>Black</span></div>';
+    const rows=hist.slice(0,18).map(n=>{
+      const col=n===0?1:(REDS.has(n)?0:2);          // 0 = red column, 1 = green, 2 = black
+      const cell=i=>i===col
+        ? `<span class="recnum" style="background:${hex(n)}">${n}</span>`
+        : '<span class="recgap"></span>';
+      return `<div class="recrow">${cell(0)}${cell(1)}${cell(2)}</div>`;
+    }).join('');
+    $('recCols').innerHTML=head+(rows||'<div class="recempty">no spins yet</div>');
   }
   renderAllHist();
 
