@@ -57,7 +57,8 @@
   .iconbtn.sq{width:30px;padding:0}
 
   .glance{display:flex;align-items:center;gap:10px}
-  .ppill{flex:0 0 auto;font-size:10px;letter-spacing:.6px;color:var(--muted);border:1px solid var(--brd);border-radius:9px;padding:6px 10px;background:rgba(9,46,34,.55);white-space:nowrap}
+  .ppill{flex:0 0 auto;height:30px;display:inline-flex;align-items:center;font-size:10px;letter-spacing:.4px;color:var(--muted);border:1px solid var(--brd);border-radius:9px;padding:0 10px;background:rgba(9,46,34,.55);white-space:nowrap}
+  .ppill.multi{color:var(--gold);border-color:var(--gold2)}
   .ppill.multi{color:var(--gold);border-color:var(--gold2)}
   .side{display:flex;align-items:center;gap:5px}
   .side .cap{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted)}
@@ -75,7 +76,7 @@
   .wonzone{stroke:var(--gold);stroke-width:3;fill:none;filter:drop-shadow(0 0 4px var(--gold));pointer-events:none}
 
   .bottombar{display:flex;align-items:center;gap:10px}
-  .ghost{border:1px solid var(--brd);background:rgba(232,200,116,.08);color:var(--text);border-radius:11px;cursor:pointer;font-family:var(--body);font-weight:600;font-size:12px;padding:11px 15px;white-space:nowrap}
+  .ghost{flex:0 0 auto;border:1px solid var(--brd);background:rgba(232,200,116,.08);color:var(--text);border-radius:11px;cursor:pointer;font-family:var(--body);font-weight:600;font-size:11.5px;padding:11px 12px;white-space:nowrap}
   .rack{flex:1;display:flex;justify-content:center;gap:7px;overflow-x:auto;padding:4px 0;scrollbar-width:none}
   .rack::-webkit-scrollbar{display:none}
   .chip{flex:0 0 auto;width:40px;height:40px;border-radius:50%;cursor:pointer;border:3px dashed rgba(255,255,255,.5);font-family:var(--num);font-weight:700;font-size:11.5px;color:#fff;display:grid;place-items:center;box-shadow:0 3px 7px rgba(0,0,0,.4);transition:transform .15s}
@@ -187,6 +188,20 @@
   .lcard .lic{display:block;font-size:26px;margin-bottom:8px;color:var(--gold)}
   .lcard b{display:block;font-family:var(--display);font-size:19px;margin-bottom:6px}
   .lcard small{display:block;font-size:11.5px;color:var(--muted);line-height:1.45}
+  .glance{align-items:stretch}
+  .gsec{display:flex;flex-direction:column;gap:3px;justify-content:center;flex:0 0 auto}
+  .gcap{font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+  .gcap.cold{color:#8fb7d4}.gcap.hot{color:#e0a05a}
+  .gnums{display:flex;gap:5px}
+  .gitem{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .gct{font-family:var(--num);font-size:8px;color:var(--muted);line-height:1}
+  .gnone{font-size:10px;color:var(--muted)}
+  .gdiv{width:1px;background:linear-gradient(180deg,transparent,var(--brd),transparent);flex:0 0 auto}
+  .gbelt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .gbelthead{display:flex;align-items:baseline;gap:8px}
+  .gsub{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);opacity:.75}
+  .belt{flex:0 0 auto;min-height:28px;padding:3px 4px}
+  .belt .pnum{width:26px;height:26px;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -197,10 +212,11 @@
     <div class="brand"><div class="mono" style="font-size:12px">RK</div><div><h1>RK Roulette</h1><span id="tableLabel">guest table</span></div></div>
     <div class="stats">
       <div class="stat"><div class="l">Total bet</div><div class="v" id="stBet">◈ 0</div></div>
-      <div class="stat"><div class="l">Total win</div><div class="v" id="stWin">◈ 0</div></div>
-      <div class="stat"><div class="l">Net</div><div class="v" id="stNet">◈ 0</div></div>
+      <div class="stat"><div class="l">Last round</div><div class="v" id="stLast">—</div></div>
+      <div class="stat"><div class="l">Session</div><div class="v" id="stNet">◈ 0</div></div>
     </div>
     <div class="balwrap">
+      <span class="ppill" id="presencePill" style="display:none">At table: you</span>
       <button class="iconbtn" id="modeBtn" style="display:none">Table</button>
       <button class="iconbtn" id="masterBtn" style="display:none">Issue chips</button>
       <button class="iconbtn" id="histBtn">History</button>
@@ -211,10 +227,14 @@
   </div>
 
   <div class="glance">
-    <div class="ppill" id="presencePill">At table: you</div>
-    <div class="side" id="coldSide"><span class="cap">Cold</span></div>
-    <div class="belt" id="belt"><span class="empty">last 50 numbers appear here</span></div>
-    <div class="side" id="hotSide"><span class="cap">Hot</span></div>
+    <div class="gsec"><span class="gcap cold">Cold</span><div class="gnums" id="coldSide"></div></div>
+    <div class="gdiv"></div>
+    <div class="gbelt">
+      <div class="gbelthead"><span class="gcap">Recent</span><span class="gsub" id="histCount"></span></div>
+      <div class="belt" id="belt"></div>
+    </div>
+    <div class="gdiv"></div>
+    <div class="gsec"><span class="gcap hot">Hot</span><div class="gnums" id="hotSide"></div></div>
   </div>
 
   <div class="feltwrap"><svg id="felt" viewBox="0 0 1005 268"></svg>
@@ -232,6 +252,7 @@
 
   <div class="bottombar">
     <button class="ghost" id="rebet">Rebet</button>
+    <button class="ghost" id="undo">Undo</button>
     <div class="rack" id="rack">
       <button class="chip" data-v="1">1</button>
       <button class="chip" data-v="2">2</button>
@@ -487,6 +508,10 @@ function showBootError(msg){
   for(let c=0;c<12;c++)for(let r=0;r<2;r++){const a=numAt(c,r),b=numAt(c,r+1);Z(X0+c*CW+CW/2,(r+1)*CH,[a,b],18,`Split ${b}/${a}`);}
   for(let c=0;c<11;c++)for(let r=0;r<2;r++){const ns=[numAt(c,r),numAt(c,r+1),numAt(c+1,r),numAt(c+1,r+1)];Z(X0+(c+1)*CW,(r+1)*CH,ns,9,`Corner ${Math.min(...ns)}`);}
   for(let r=0;r<3;r++)Z(X0,r*CH+CH/2,[0,3-r],18,`Split 0/${3-r}`);
+  Z(X0,0,[0,1,2,3],9,'Basket 0-1-2-3');          // corner of 0 and the 1/2/3 column
+  Z(X0,GY,[0,1,2,3],9,'Basket 0-1-2-3');
+  Z(X0,CH,[0,2,3],12,'Trio 0-2-3');              // 0 meets the 3/2 line
+  Z(X0,2*CH,[0,1,2],12,'Trio 0-1-2');            // 0 meets the 2/1 line
   for(let c=0;c<12;c++)Z(X0+c*CW+CW/2,GY,[3*c+1,3*c+2,3*c+3],12,`Street ${3*c+1}`);
   for(let c=0;c<11;c++)Z(X0+(c+1)*CW,GY,[3*c+1,3*c+2,3*c+3,3*c+4,3*c+5,3*c+6],6,`Six ${3*c+1}–${3*c+6}`);
   for(let r=0;r<3;r++)Z(XC+50,r*CH+CH/2,Array.from({length:12},(_,k)=>3*k+(3-r)),3,`Column ${3-r}`);
@@ -501,6 +526,7 @@ function showBootError(msg){
 
   /* state */
   let serverBalance=0,chip=5,bets={},lastBets=null,running=false;
+  let lastRound=null,betStack=[];
   let mode=null,bettingLocked=false,sharedRound=null,submittedStaked=0,curServerStaked=0,submitTmr=null,pendingRoundRow=null;
   let me=null,curServerBal=0,curServerPayout=0;
   let sBet=0,sWin=0;const rounds=[];
@@ -512,7 +538,12 @@ function showBootError(msg){
   function renderTop(skipBal){
     if(!skipBal)balEl.textContent=fmt(disp());const t=total();
     spinBtn.disabled=running||t===0;spinBtn.textContent=t>0?`SPIN ◈${fmt(t)}`:'SPIN';
-    $('stBet').textContent='◈ '+fmt(sBet);$('stWin').textContent='◈ '+fmt(sWin);
+    $('stBet').textContent='◈ '+fmt(t);                       // chips on the table right now
+    const lel=$('stLast');
+    if(!lastRound){lel.textContent='—';lel.className='v';}
+    else{const ln=lastRound.net;
+      lel.textContent=(ln<0?'−◈ ':ln>0?'+◈ ':'◈ ')+fmt(Math.abs(ln));
+      lel.className='v '+(ln>0?'pos':ln<0?'neg':'');}
     const net=sWin-sBet,el=$('stNet');
     el.textContent=(net<0?'−◈ ':'◈ ')+fmt(Math.abs(net));el.className='v '+(net>0?'pos':net<0?'neg':'');
   }
@@ -530,17 +561,23 @@ function showBootError(msg){
     let best=-1,bd=1e9;zones.forEach((z,i)=>{const d=(z.x-px)**2+(z.y-py)**2;if(d<bd){bd=d;best=i;}});
     if(best<0||bd>26*26)return;
     if(disp()<chip){balEl.animate([{color:'#e8c874'},{color:'#ff6b6b'},{color:'#e8c874'}],{duration:500});return;}
-    bets[best]=(bets[best]||0)+chip;drawChips();renderTop();blip(880,.03,.03,'sine');afterBetChange();
+    bets[best]=(bets[best]||0)+chip;betStack.push({zi:best,amt:chip});drawChips();renderTop();blip(880,.03,.03,'sine');afterBetChange();
   });
 
   /* controls use pointerdown for snappier response */
   $('rack').addEventListener('pointerdown',e=>{const b=e.target.closest('.chip');if(!b)return;
     chip=+b.dataset.v;document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c===b));});
-  $('clear').addEventListener('pointerdown',()=>{if(running||bettingLocked)return;bets={};drawChips();renderTop();afterBetChange();});
+  $('clear').addEventListener('pointerdown',()=>{if(running||bettingLocked)return;bets={};betStack=[];drawChips();renderTop();afterBetChange();});
+  $('undo').addEventListener('pointerdown',()=>{                 // peel back one placement at a time
+    if(running||bettingLocked)return;
+    const last=betStack.pop();if(!last)return;
+    bets[last.zi]=(bets[last.zi]||0)-last.amt;
+    if(bets[last.zi]<=0)delete bets[last.zi];
+    drawChips();renderTop();blip(520,.03,.03,'sine');afterBetChange();});
   $('rebet').addEventListener('pointerdown',()=>{if(running||bettingLocked||!mode||!lastBets)return;
     const need=Object.values(lastBets).reduce((a,b)=>a+b,0);
     if(serverBalance<need){balEl.animate([{color:'#e8c874'},{color:'#ff6b6b'},{color:'#e8c874'}],{duration:500});return;}
-    bets=Object.assign({},lastBets);drawChips();renderTop();blip(880,.04,.04,'sine');afterBetChange();});
+    bets=Object.assign({},lastBets);betStack=Object.keys(lastBets).map(zi=>({zi:+zi,amt:lastBets[zi]}));drawChips();renderTop();blip(880,.04,.04,'sine');afterBetChange();});
 
   /* history modal */
   const histModal=$('histModal');
@@ -552,21 +589,55 @@ function showBootError(msg){
   $('histClose').addEventListener('pointerdown',()=>histModal.classList.remove('on'));
   histModal.addEventListener('pointerdown',e=>{if(e.target===histModal)histModal.classList.remove('on');});
 
-  /* belt + hot/cold */
-  const hist=[];const belt=$('belt');
-  function pushHist(n){hist.unshift(n);if(hist.length>50)hist.pop();
-    const empty=belt.querySelector('.empty');if(empty)empty.remove();
-    const d=document.createElement('div');d.className='pnum';d.style.background=hex(n);d.textContent=n;
-    belt.prepend(d);while(belt.children.length>50)belt.removeChild(belt.lastChild);belt.scrollLeft=0;
-    renderHotCold();renderRecCols();}
+  /* belt + hot/cold — history persists: solo in this device + your cloud rounds,
+     shared pulled from the cloud so every player sees the same table history */
+  const HIST_MAX=250;
+  let hist=[];const belt=$('belt');
+  const histKey=()=>'rk_hist_solo_'+(me?me.id:'anon');
+  function saveLocalHist(){
+    if(mode!=='solo')return;
+    try{localStorage.setItem(histKey(),JSON.stringify(hist.slice(0,HIST_MAX)));}catch(e){}
+  }
+  function renderBelt(){
+    belt.innerHTML = hist.length
+      ? hist.map(n=>`<div class="pnum" style="background:${hex(n)}">${n}</div>`).join('')
+      : '<span class="empty">no spins recorded yet</span>';
+    belt.scrollLeft=0;
+    const hc=$('histCount');if(hc)hc.textContent=hist.length?`last ${hist.length}`:'';
+  }
+  function renderAllHist(){renderBelt();renderHotCold();renderRecCols();}
+  async function loadHistory(){
+    hist=[];renderAllHist();
+    if(mode==='solo'){
+      try{const raw=localStorage.getItem(histKey());if(raw){const a=JSON.parse(raw);if(Array.isArray(a))hist=a;}}catch(e){}
+      renderAllHist();                                   // instant from device
+      try{                                               // then reconcile with the cloud
+        const {data}=await supa.from('rounds').select('result').eq('user_id',me.id)
+          .order('id',{ascending:false}).limit(HIST_MAX);
+        if(data&&data.length){hist=data.map(r=>r.result);saveLocalHist();renderAllHist();}
+      }catch(e){}
+    }else if(mode==='shared'){
+      try{
+        const {data}=await supa.from('table_rounds').select('result').eq('status','done')
+          .not('result','is',null).order('id',{ascending:false}).limit(HIST_MAX);
+        if(data)hist=data.map(r=>r.result);
+      }catch(e){}
+      renderAllHist();
+    }
+  }
+  function pushHist(n){
+    hist.unshift(n);if(hist.length>HIST_MAX)hist.pop();
+    saveLocalHist();renderAllHist();
+  }
   function renderHotCold(){
     const count={};for(let n=0;n<=36;n++)count[n]=0;hist.forEach(n=>count[n]++);
     const lastSeen={};hist.forEach((n,i)=>{if(lastSeen[n]===undefined)lastSeen[n]=i;});
     const all=Array.from({length:37},(_,n)=>n);
-    const hot=all.filter(n=>count[n]>0).sort((a,b)=>count[b]-count[a]||lastSeen[a]-lastSeen[b]).slice(0,4);
-    const cold=all.slice().sort((a,b)=>count[a]-count[b]||(lastSeen[b]??99)-(lastSeen[a]??99)).slice(0,4);
-    const mk=(list,el,cap)=>{el.innerHTML=`<span class="cap">${cap}</span>`+(hist.length===0?'':list.map(n=>`<span class="pnum" style="background:${hex(n)}">${n}</span>`).join(''));};
-    mk(cold,$('coldSide'),'Cold');mk(hot,$('hotSide'),'Hot');
+    const hot=all.filter(n=>count[n]>0).sort((a,b)=>count[b]-count[a]||lastSeen[a]-lastSeen[b]).slice(0,5);
+    const cold=all.slice().sort((a,b)=>count[a]-count[b]||(lastSeen[b]??999)-(lastSeen[a]??999)).slice(0,5);
+    const mk=(list,el)=>{el.innerHTML=hist.length===0?'<span class="gnone">—</span>':
+      list.map(n=>`<span class="gitem"><span class="pnum" style="background:${hex(n)}">${n}</span><span class="gct">${count[n]}</span></span>`).join('');};
+    mk(cold,$('coldSide'));mk(hot,$('hotSide'));
   }
   function renderRecCols(){
     const reds=hist.filter(n=>REDS.has(n)).slice(0,16);
@@ -575,7 +646,7 @@ function showBootError(msg){
     const col=(title,arr)=>`<div class="reccol"><h4>${title}</h4>${arr.map(n=>`<span class="recnum" style="background:${hex(n)}">${n}</span>`).join('')}</div>`;
     $('recCols').innerHTML=col('Red',reds)+col('Green',greens)+col('Black',blacks);
   }
-  renderHotCold();renderRecCols();
+  renderAllHist();
 
   /* your picks */
   function renderPicks(snapshot){
@@ -701,10 +772,10 @@ function showBootError(msg){
     for(const zi in bets){const z=zones[zi];if(z.nums.includes(num)){fx+=`<circle class="wonzone" cx="${z.x}" cy="${z.y}" r="18"/>`;}}
     fxLayer.innerHTML=fx;
     const payout=curServerPayout;
-    sBet+=staked;sWin+=payout;rounds.unshift({bet:staked,payout,net:payout-staked});
+    sBet+=staked;sWin+=payout;lastRound={bet:staked,payout,net:payout-staked};rounds.unshift(lastRound);
     const fromDisp=mode==='shared'?serverBalance:serverBalance-staked;
     serverBalance=curServerBal;
-    bets={};submittedStaked=0;drawChips();running=false;bettingLocked=false;renderTop(true);
+    bets={};betStack=[];submittedStaked=0;drawChips();running=false;bettingLocked=false;renderTop(true);
     (function cu(){const t0=performance.now(),dur=600;
       function f(now){const p=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-p,3);balEl.textContent=fmt(fromDisp+(serverBalance-fromDisp)*e);if(p<1)requestAnimationFrame(f);else balEl.textContent=fmt(serverBalance);}requestAnimationFrame(f);})();
     pushHist(num);
@@ -926,6 +997,7 @@ function showBootError(msg){
     spinBtn.style.display=m==='shared'?'none':'';
     $('presencePill').style.display=m==='shared'?'':'none';
     renderTop();
+    loadHistory();
     if(m==='solo'){
       leaveTable();unwatchRounds();
       setTimeout(()=>say('place_bets','Place your bets.'),350);
