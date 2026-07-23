@@ -131,7 +131,7 @@
   .skip.hide{visibility:hidden}
 
   /* history modal */
-  .modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,16,11,.7);backdrop-filter:blur(4px)}
+  .modal{position:fixed;inset:0;z-index:170;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,16,11,.7);backdrop-filter:blur(4px)}
   .modal.on{display:flex}
   .sheet{width:100%;max-width:460px;max-height:82vh;display:flex;flex-direction:column;background:#0a3a2b;border:1px solid var(--brd);border-radius:14px;overflow:hidden}
   .sheethead{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--brd)}
@@ -202,6 +202,31 @@
   .gsub{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);opacity:.75}
   .belt{flex:0 0 auto;min-height:28px;padding:3px 4px}
   .belt .pnum{width:26px;height:26px;font-size:11.5px}
+  /* top bar: three groups, stats hold the middle */
+  .topbar{gap:14px}
+  .tbleft{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:9px}
+  .brandtxt{min-width:0}
+  .tbright{flex:1 1 0;display:flex;align-items:center;justify-content:flex-end;gap:9px}
+  .stats{flex:0 0 auto;display:flex;align-items:center;gap:18px}
+  .homebtn{flex:0 0 auto;width:38px;height:38px;padding:0;border:1px solid rgba(232,200,116,.45);border-radius:11px;
+           background:var(--gold);cursor:pointer;display:grid;place-items:center;transition:.18s}
+  .homebtn:active{transform:scale(.94)}
+  .homebtn:hover{box-shadow:0 0 0 3px rgba(232,200,116,.22)}
+  .homemono{font-family:var(--display);font-weight:700;font-size:15px;color:#0a3a2b;letter-spacing:.5px}
+  .caret{width:22px;height:22px;padding:0;border:1px solid var(--brd);border-radius:7px;background:rgba(232,200,116,.08);
+         color:var(--muted);font-size:11px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:.18s}
+  .caret:active{transform:scale(.9)}
+  .caret:hover{color:var(--gold);border-color:var(--gold2)}
+
+  /* hot / cold boxed so they read at a glance */
+  .gsec{border:1px solid var(--brd);border-radius:11px;padding:5px 10px 6px;background:rgba(4,26,19,.5)}
+  .gsec .gcap{display:block;margin-bottom:3px}
+
+  /* lobby footer */
+  .lobbybar{margin-top:22px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .lobbyuser{font-size:11px;color:var(--muted);letter-spacing:.4px}
+  .lobbyacts{display:flex;gap:9px}
+  .ghost.sm{padding:9px 14px;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -209,31 +234,31 @@
 
 <div class="app">
   <div class="topbar">
-    <div class="brand"><div class="mono" style="font-size:12px">RK</div><div><h1>RK Roulette</h1><span id="tableLabel">guest table</span></div></div>
+    <div class="tbleft">
+      <button class="homebtn" id="homeBtn" title="Tables" aria-label="Tables"><span class="homemono">RK</span></button>
+      <div class="brandtxt"><h1>RK Roulette</h1><span id="tableLabel">guest table</span></div>
+      <span class="ppill" id="presencePill" style="display:none">At table: you</span>
+    </div>
+
     <div class="stats">
       <div class="stat"><div class="l">Total bet</div><div class="v" id="stBet">◈ 0</div></div>
       <div class="stat"><div class="l">Last round</div><div class="v" id="stLast">—</div></div>
       <div class="stat"><div class="l">Session</div><div class="v" id="stNet">◈ 0</div></div>
+      <button class="caret" id="histBtn" title="Round history" aria-label="Round history">▾</button>
     </div>
-    <div class="balwrap">
-      <span class="ppill" id="presencePill" style="display:none">At table: you</span>
-      <button class="iconbtn" id="modeBtn" style="display:none">Table</button>
-      <button class="iconbtn" id="masterBtn" style="display:none">Issue chips</button>
-      <button class="iconbtn" id="histBtn">History</button>
+
+    <div class="tbright">
       <div class="bal"><div class="l">Balance</div><div class="v" id="bal">1,000</div></div>
       <button class="iconbtn sq" id="mute" aria-label="Sound">♪</button>
-      <button class="iconbtn sq" id="logoutBtn" aria-label="Log out" title="Log out">⏻</button>
     </div>
   </div>
 
   <div class="glance">
     <div class="gsec"><span class="gcap cold">Cold</span><div class="gnums" id="coldSide"></div></div>
-    <div class="gdiv"></div>
     <div class="gbelt">
-      <div class="gbelthead"><span class="gcap">Recent</span><span class="gsub" id="histCount"></span></div>
+      <div class="gbelthead"><span class="gcap">Recent</span></div>
       <div class="belt" id="belt"></div>
     </div>
-    <div class="gdiv"></div>
     <div class="gsec"><span class="gcap hot">Hot</span><div class="gnums" id="hotSide"></div></div>
   </div>
 
@@ -274,6 +299,13 @@
     <div class="lobbycards">
       <button class="lcard" id="soloCard"><span class="lic">♠</span><b>Single Player</b><small>Your own wheel. Spin when you like — or let the clock call it.</small></button>
       <button class="lcard" id="sharedCard"><span class="lic">♥</span><b>Shared Table</b><small>One wheel for everyone. Bet together, watch the same ball land.</small></button>
+    </div>
+    <div class="lobbybar">
+      <span class="lobbyuser" id="lobbyUser"></span>
+      <div class="lobbyacts">
+        <button class="ghost sm" id="masterBtn" style="display:none">Issue chips</button>
+        <button class="ghost sm" id="logoutBtn">Log out</button>
+      </div>
     </div>
   </div>
 </div>
@@ -603,7 +635,6 @@ function showBootError(msg){
       ? hist.map(n=>`<div class="pnum" style="background:${hex(n)}">${n}</div>`).join('')
       : '<span class="empty">no spins recorded yet</span>';
     belt.scrollLeft=0;
-    const hc=$('histCount');if(hc)hc.textContent=hist.length?`last ${hist.length}`:'';
   }
   function renderAllHist(){renderBelt();renderHotCold();renderRecCols();}
   async function loadHistory(){
@@ -633,8 +664,8 @@ function showBootError(msg){
     const count={};for(let n=0;n<=36;n++)count[n]=0;hist.forEach(n=>count[n]++);
     const lastSeen={};hist.forEach((n,i)=>{if(lastSeen[n]===undefined)lastSeen[n]=i;});
     const all=Array.from({length:37},(_,n)=>n);
-    const hot=all.filter(n=>count[n]>0).sort((a,b)=>count[b]-count[a]||lastSeen[a]-lastSeen[b]).slice(0,5);
-    const cold=all.slice().sort((a,b)=>count[a]-count[b]||(lastSeen[b]??999)-(lastSeen[a]??999)).slice(0,5);
+    const hot=all.filter(n=>count[n]>0).sort((a,b)=>count[b]-count[a]||lastSeen[a]-lastSeen[b]).slice(0,4);
+    const cold=all.slice().sort((a,b)=>count[a]-count[b]||(lastSeen[b]??999)-(lastSeen[a]??999)).slice(0,4);
     const mk=(list,el)=>{el.innerHTML=hist.length===0?'<span class="gnone">—</span>':
       list.map(n=>`<span class="gitem"><span class="pnum" style="background:${hex(n)}">${n}</span><span class="gct">${count[n]}</span></span>`).join('');};
     mk(cold,$('coldSide'));mk(hot,$('hotSide'));
@@ -826,6 +857,7 @@ function showBootError(msg){
     if(error){$('authErr').textContent='Could not load profile';entering=false;return;}
     me=prof;serverBalance=Number(prof.balance);
     $('tableLabel').textContent=prof.display_name+"'s table";
+    $('lobbyUser').textContent='Signed in as '+prof.display_name;
     renderTop();authgate.classList.add('hide');
     if(prof.role==='master')setupMaster();
     $('lobby').classList.remove('hide');
@@ -993,7 +1025,6 @@ function showBootError(msg){
   async function setMode(m){
     mode=m;bettingLocked=false;bets={};submittedStaked=0;sharedRound=null;drawChips();stopTimer();
     $('lobby').classList.add('hide');
-    const mb=$('modeBtn');mb.style.display='';mb.textContent=m==='solo'?'Table: Solo':'Table: Shared';
     spinBtn.style.display=m==='shared'?'none':'';
     $('presencePill').style.display=m==='shared'?'':'none';
     renderTop();
@@ -1017,10 +1048,9 @@ function showBootError(msg){
     }
     mode=null;bets={};submittedStaked=0;sharedRound=null;bettingLocked=false;drawChips();stopTimer();
     leaveTable();unwatchRounds();
-    $('modeBtn').style.display='none';
     $('lobby').classList.remove('hide');
   }
-  $('modeBtn').addEventListener('click',backToLobby);
+  $('homeBtn').addEventListener('click',backToLobby);
   $('soloCard').addEventListener('click',()=>setMode('solo'));
   $('sharedCard').addEventListener('click',()=>setMode('shared'));
 
@@ -1053,7 +1083,7 @@ function showBootError(msg){
     await supa.auth.signOut();
     leaveTable();unwatchRounds();
     mode=null;sharedRound=null;submittedStaked=0;bettingLocked=false;stopTimer();
-    $('modeBtn').style.display='none';$('lobby').classList.add('hide');
+    $('lobby').classList.add('hide');
     if(balChannel){supa.removeChannel(balChannel);balChannel=null;}
     me=null;entering=false;masterReady=false;
     serverBalance=0;bets={};lastBets=null;sBet=0;sWin=0;rounds.length=0;
